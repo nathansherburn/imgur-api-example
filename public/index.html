@@ -1,0 +1,117 @@
+<html>
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+	<style>
+	body {
+		font-family: Helvetica;
+		text-align: center;
+	}
+		#take-picture {
+			display: none;
+		}
+		#camera-button {
+			margin: 0 auto;
+			height: 50px;
+			width: 50px;
+			border-radius: 50%;
+			background-color: #999;
+			padding: 10px;
+			font-size: 46px;
+		}
+		#image-link {
+			display: none;
+		}
+	</style>
+</head>
+<body>
+
+	<div id="camera-button"><i class="fa fa-camera"></i></div>
+
+    <input type="file" id="take-picture" accept="image/*">
+
+	<h2>Preview:</h2>
+
+	<p><img src="" height="100" alt="" id="show-picture"></p>
+
+    <div id="image-link">uploading to imgur...</div>
+
+	<p id="error"></p>
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+	<script type="text/javascript">
+
+		$('#camera-button').click(function(){
+			$("#take-picture").trigger('click');
+		});
+
+		var APP_ID = "";
+		var secret = "";
+
+		var postImage = function (image) {
+			$.ajax({ 
+			    url: 'https://api.imgur.com/3/image',
+			    headers: {
+			        'Authorization': 'Client-ID ' + APP_ID
+			    },
+			    type: 'POST',
+			    data: {
+			        'image': image
+			    }
+			})
+		    .done(function(reply) {
+		    	console.log(reply.data.deletehash); // Must save this to db for deleting images later.
+		    	console.log(reply.data.link); // This is the imgur URL of the files.
+		    	$("#image-link").html('<a href="' + reply.data.link + '">Click to see your image!</a>');		    	
+		    })
+		    .fail( function(reply) {
+		    	console.log(reply);
+		    	alert(JSON.stringify(reply)); // For phones and tablets with no console to log to.
+	    	})
+
+		};
+
+		(function () {
+		    var takePicture = document.querySelector("#take-picture"),
+		        showPicture = document.querySelector("#show-picture");
+
+		    if (takePicture && showPicture) {
+		        // Set events
+		        takePicture.onchange = function (event) {
+
+                	$("#image-link").css("display", "block");
+
+		            // Get a reference to the taken picture or chosen file
+		            var files = event.target.files,
+		                file;
+		            if (files && files.length > 0) {
+		                file = files[0];
+
+	                    try {
+	                        // Fallback if createObjectURL is not supported
+	                        var fileReader = new FileReader();
+	                        fileReader.onloadstart = function (event) {
+	                        }
+	                        fileReader.onload = function (event) {
+	                            showPicture.src = event.target.result;
+	                        	imageBinary = fileReader.result.replace(/^data:image\/(png|jpg|jpeg);base64,/, "");
+							    postImage(imageBinary);
+	                        };
+	                        fileReader.readAsDataURL(file);		                        
+	                    }
+	                    catch (e) {
+	                        //
+	                        var error = document.querySelector("#error");
+	                        if (error) {
+	                            error.innerHTML = "FileReader is not supported in your browser";
+	                        }
+	                    }
+		            }
+		        };
+		    }
+		})();
+
+	</script>
+
+</body>
+</html>
